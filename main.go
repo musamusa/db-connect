@@ -89,6 +89,7 @@ func updateDBSettings () Configuration {
 	case
 	"sqlite",
 	"sqlite3":
+		// overwrite input type
 		config.DBType = "sqlite3"
 		if len(config.DBPath) > 0 {
 			config.DBConnectionString = config.DBPath
