@@ -86,7 +86,7 @@ func updateDBSettings () Configuration {
 	"postgres",
 	"mysql":
 		return setDBString(config)
-	case 
+	case
 	"sqlite",
 	"sqlite3":
 		config.DBType = "sqlite3"
