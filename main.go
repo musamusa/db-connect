@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"github.com/go-xorm/xorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 type Configuration struct {
@@ -16,6 +18,7 @@ type Configuration struct {
 	DBPort string
 	DBName string
 	DBPath string
+	DBConnectionString string
 }
 
 func GetConfig () Configuration {
@@ -44,12 +47,17 @@ defaulting to sqlite
 }
 
 func GetConnection () (*xorm.Engine, error) {
-	config := GetConfig()
-	return xorm.NewEngine(config.DBType, config.DBPath)
+	config := updateDBSettings()
+	fmt.Println(config)
+	return xorm.NewEngine(config.DBType, config.DBConnectionString)
 }
 
 func SyncDB (bean interface{}) (*xorm.Engine, error) {
 	orm, err := GetConnection()
+
+	if err != nil {
+		return orm, err
+	}
 	err = orm.CreateTables(bean)
 	if err != nil {
 		return orm, err
@@ -61,4 +69,31 @@ func SyncDB (bean interface{}) (*xorm.Engine, error) {
 	}
 
 	return orm, err
+}
+
+func setDBString (config Configuration) Configuration {
+	config.DBConnectionString =
+		config.DBUser + ":" + config.DBPass +
+		"@tcp(" + config.DBHost + ":" + config.DBPort + ")/" + config.DBName
+
+	return config
+}
+
+func updateDBSettings () Configuration {
+	config := GetConfig()
+	switch config.DBType {
+	case
+	"postgres",
+	"mysql":
+		return setDBString(config)
+	case 
+	"sqlite",
+	"sqlite3":
+		config.DBType = "sqlite3"
+		if len(config.DBPath) > 0 {
+			config.DBConnectionString = config.DBPath
+		}
+		return config
+	}
+	return config
 }
