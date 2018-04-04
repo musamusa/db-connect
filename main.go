@@ -21,10 +21,10 @@ type Configuration struct {
 	DBConnectionString string
 }
 
-func GetConfig () Configuration {
+func GetConfig () *Configuration {
 	file, _ := os.Open("config.json")
 	decoder := json.NewDecoder(file)
-	configuration := Configuration{}
+	configuration := &Configuration{}
 	err := decoder.Decode(&configuration)
 	if err != nil {
 		fmt.Println(`
@@ -40,15 +40,13 @@ Provide JSON data in a file config.json containing the following:
  }
 defaulting to sqlite
         `)
-		configuration.DBType = "sqlite"
-		configuration.DBPath = "/tmp/system.db"
+		defaultToSqlite(configuration)
 	}
 	return configuration
 }
 
 func GetConnection () (*xorm.Engine, error) {
 	config := updateDBSettings()
-	fmt.Println(config)
 	return xorm.NewEngine(config.DBType, config.DBConnectionString)
 }
 
@@ -71,21 +69,20 @@ func SyncDB (bean interface{}) (*xorm.Engine, error) {
 	return orm, err
 }
 
-func setDBString (config Configuration) Configuration {
+func setDBString (config *Configuration) {
 	config.DBConnectionString =
 		config.DBUser + ":" + config.DBPass +
 		"@tcp(" + config.DBHost + ":" + config.DBPort + ")/" + config.DBName
-
-	return config
 }
 
-func updateDBSettings () Configuration {
+func updateDBSettings () *Configuration {
 	config := GetConfig()
 	switch config.DBType {
 	case
 	"postgres",
 	"mysql":
-		return setDBString(config)
+		setDBString(config)
+		return config
 	case
 	"sqlite",
 	"sqlite3":
@@ -97,4 +94,11 @@ func updateDBSettings () Configuration {
 		return config
 	}
 	return config
+}
+
+func defaultToSqlite (config *Configuration) {
+	if len(config.DBType) == 0 {
+		config.DBType = "sqlite3"
+		config.DBPath = "/tmp/system.db"
+	}
 }
